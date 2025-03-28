@@ -90,10 +90,16 @@ class GSEAConfidenceClassifier:
                 pass
         signature = np.array(signature, dtype=float)
         
+        # 2) Rank the expression values (non-parametric)
+        # We'll use pandas for convenience:
         expr_series = pd.Series(expr_values)
         ranks = expr_series.rank(method="average", ascending=True).values 
+        # 3) Compute Spearman correlation between ranks and the signature vector
+        #    Note: This is essentially pearsonr of (ranks, signature) 
+        #    but using spearmanr is more direct and ensures consistency
         rho, _ = spearmanr(ranks, signature, nan_policy="omit")
         
+        # 4) (Optional) Derive a label from the sign of the correlation
         label = None
         if return_label:
             if rho > 0:
