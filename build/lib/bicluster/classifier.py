@@ -37,6 +37,74 @@ class GSEAConfidenceClassifier:
         sorted_idx = np.argsort(-fc_subset)
         return list(genes[sorted_idx]), fc_subset[sorted_idx]
 
+    # def annotate_single_cell(
+    #     self,
+    #     gene_names: List[str],
+    #     expr_values: np.array,
+    #     upgenes,
+    #     downgenes,
+    #     return_label: bool = True
+    #     ) -> Tuple[float, Optional[str]]:
+    #     """
+    #     Annotate a single cell based on up/down gene sets using rank-based correlation (Spearman).
+        
+    #     Parameters
+    #     ----------
+    #     gene_names : List[str]
+    #         A list of gene names for this cell (unsorted).
+    #     expr_values : List[float]
+    #         A list of gene expression values corresponding to gene_names (unsorted).
+    #     return_label : bool, optional (default=True)
+    #         If True, also return a simple annotation label ("up-regulated" or "down-regulated")
+    #         based on the sign of the correlation.
+        
+    #     Returns
+    #     -------
+    #     score : float
+    #         Spearman correlation between the cell's expression ranks and the +1/-1 signature.
+    #     label : str or None
+    #         "up-regulated" if score > 0, "down-regulated" if score < 0, and "neutral" if score = 0.
+    #         Returned only if return_label is True, otherwise None.
+        
+    #     Notes
+    #     -----
+    #     - A positive score means the cell's top-ranked genes overlap more with up_genes.
+    #     - A negative score means the cell's top-ranked genes overlap more with down_genes.
+    #     - Genes not in (up_genes ∪ down_genes) get signature = 0, which won't affect the correlation.
+    #     """
+    #     up_genes = set(upgenes)
+    #     down_genes = set(downgenes)
+        
+    #     if len(gene_names) != len(expr_values):
+    #         raise ValueError("gene_names and expr_values must have the same length.")
+        
+    #     # 1) Build a signature vector for each gene: +1 (up), -1 (down), or 0
+    #     signature = np.zeros(len(gene_names))
+    #     for i, g in enumerate(gene_names):
+    #         if g in up_genes:
+    #             signature[i] = 1.0
+    #         elif g in down_genes:
+    #             signature[i] = -1.0
+    #         else:
+    #             # signature[i] = 0.0
+    #             pass
+    #     signature = np.array(signature, dtype=float)
+        
+    #     expr_series = pd.Series(expr_values)
+    #     ranks = expr_series.rank(method="average", ascending=True).values 
+    #     rho, _ = spearmanr(ranks, signature, nan_policy="omit")
+        
+    #     label = None
+    #     if return_label:
+    #         if rho > 0:
+    #             label = "up-regulated"
+    #         elif rho < 0:
+    #             label = "down-regulated"
+    #         else:
+    #             label = "neutral"
+        
+    #     return rho, label
+    
     def annotate_single_cell(
         self,
         gene_names: List[str],
@@ -72,44 +140,45 @@ class GSEAConfidenceClassifier:
         - A negative score means the cell's top-ranked genes overlap more with down_genes.
         - Genes not in (up_genes ∪ down_genes) get signature = 0, which won't affect the correlation.
         """
-        up_genes = set(upgenes)
-        down_genes = set(downgenes)
+        up_genes = np.array(upgenes)
+        down_genes = np.array(downgenes)
         
         if len(gene_names) != len(expr_values):
             raise ValueError("gene_names and expr_values must have the same length.")
         
-        # 1) Build a signature vector for each gene: +1 (up), -1 (down), or 0
-        signature = np.zeros(len(gene_names))
-        for i, g in enumerate(gene_names):
-            if g in up_genes:
-                signature[i] = 1.0
-            elif g in down_genes:
-                signature[i] = -1.0
-            else:
-                # signature[i] = 0.0
-                pass
-        signature = np.array(signature, dtype=float)
+        ranked_genes = np.array(gene_names, dtype=str)
+        ranked_genes = ranked_genes[np.argsort(-expr_values)]
         
-        # 2) Rank the expression values (non-parametric)
-        # We'll use pandas for convenience:
-        expr_series = pd.Series(expr_values)
-        ranks = expr_series.rank(method="average", ascending=True).values 
-        # 3) Compute Spearman correlation between ranks and the signature vector
-        #    Note: This is essentially pearsonr of (ranks, signature) 
-        #    but using spearmanr is more direct and ensures consistency
-        rho, _ = spearmanr(ranks, signature, nan_policy="omit")
+        num_up_inter = len(np.intersect1d(ranked_genes, up_genes))
+        num_down_inter = len(np.intersect1d(ranked_genes, down_genes))
+        num_up = len(up_genes)
+        num_down = len(down_genes)
         
-        # 4) (Optional) Derive a label from the sign of the correlation
-        label = None
+        ES = 0
+        max_ES = -1
+        
+        for i in range(len(ranked_genes)):
+            curr_gene = ranked_genes[i]
+            if curr_gene in up_genes:
+                ES += 1 / num_up_inter
+            elif curr_gene in down_genes:
+                ES -= 1 / num_down_inter
+            if ES > max_ES:
+                max_ES = ES
+        
+        if max_ES > 0:
+            label = "up-regulated"
+        elif max_ES < 0:
+            label = "down-regulated"
+        else:
+            label = "neutral"
         if return_label:
-            if rho > 0:
-                label = "up-regulated"
-            elif rho < 0:
-                label = "down-regulated"
-            else:
-                label = "neutral"
+            return max_ES, label
+        else:
+            return max_ES, None
         
-        return rho, label
+        
+        
 
     def _get_enrichment_features(self, adata: sc.AnnData):
         """

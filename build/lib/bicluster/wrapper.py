@@ -9,7 +9,7 @@ import numpy as np
 import scBC
 import scBC.model
 
-time_deco = timed_execution(timeout_seconds=60*60*3)
+time_deco = timed_execution(timeout_seconds=60*60*5)
 
 
 @time_deco

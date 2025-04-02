@@ -210,7 +210,7 @@ def plot_biclusters_heatmap(adata: sc.AnnData, biclusters: list, save_path=None)
                             fill=False, edgecolor="red", lw=2)
         ax.add_patch(rect)
 
-        ax.set_title(f"Bicluster {i}", fontsize=10)
+        ax.set_title(f"Bicluster {i}", fontsize=18)
         ax.set_xticks([])
         ax.set_yticks([])
         
@@ -218,7 +218,7 @@ def plot_biclusters_heatmap(adata: sc.AnnData, biclusters: list, save_path=None)
     if all_im:
         cbar = fig.colorbar(all_im[0], cax=cbar_ax)
         cbar.set_ticks(np.arange(float(global_vmin), float(global_vmax)))
-        cbar.set_label('Expression Value')
+        cbar.set_label('Expression Value', fontsize=18)
 
     # plt.tight_layout()
     

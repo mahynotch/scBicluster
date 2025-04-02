@@ -327,8 +327,37 @@ def mat_to_adata(mat):
     adata = sc.AnnData(mat)
     return adata
 
-def info_to_bicluster(info):
-    return CustomBiclusterClass(cell_index=info['rows'], gene_index=info['cols'])
+def info_to_biclusters(info):
+    biclust_list = BiclusterList()
+    submats = info['submatrices']
+    marker_list = []
+    for submat in submats:
+        bound = submat['bounds']
+        rows = np.arange(bound[0], bound[1])
+        cols = np.arange(bound[2], bound[3])
+        biclust_list.append(rows, cols)
+        marker = submat['markers']
+        if marker is not None:
+            marker_list.append(np.array(marker))
+    return biclust_list, marker_list
+
+def shuffle_index_apply_biclusters(buclusters, row_index_array, col_index_array):
+    new_biclusters = BiclusterList()
+    for bicluster in buclusters:
+        cell_index=row_index_array[bicluster.cell_index]
+        gene_index=col_index_array[bicluster.gene_index]
+        new_biclusters.append(cell_index, gene_index)
+    return new_biclusters
+
+def shuffle_index_apply_markers(marker_list, col_index_array):
+    new_marker_list = []
+    for markers in marker_list:
+        new_marker = []
+        for marker in markers:
+            new_marker.append(col_index_array[marker])
+        new_marker_list.append(new_marker)
+    return new_marker_list
+    
 
 def binarize_expr_array(array: np.ndarray):
     array - np.max(array, axis=0) / 2
