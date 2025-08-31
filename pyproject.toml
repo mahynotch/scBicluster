@@ -1,21 +1,12 @@
 [build-system]
-requires = [
-  "setuptools>=42",
-  "wheel",
-  "scikit-build",       # scikit-build to drive CMake
-  "cmake>=3.18",        # or higher if needed
-  "ninja",              # optional, but faster builds
-  "pybind11"            # ensure pybind11 is installed
-]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "biclust_classifier"
 version = "0.1.0"
-description = "Bit pattern biclustering algorithm"
+description = ""
 license = { file = "LICENSE" }
-
-# Optional author info, readme, etc.
 authors = [
   { name = "Your Name", email = "you@example.com" }
 ]

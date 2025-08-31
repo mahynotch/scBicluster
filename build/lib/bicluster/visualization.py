@@ -249,22 +249,35 @@ def _process_assignments_from_column(data_series: pd.Series):
 
     for entry in data_series:
         current_item_assignments = []
+        
+        # MINIMAL CHANGE APPLIED HERE:
+        # Prioritize checking for list or NumPy array instances first.
+        # This ensures that if 'entry' is an array, it's processed by iterating
+        # its elements, and 'pd.isna(entry)' is not called directly on the array
+        # in a way that would produce a boolean array for the 'if' condition.
         if isinstance(entry, (list, np.ndarray)): 
+            # The list comprehension correctly handles iterating through elements 
+            # of both Python lists and 1D NumPy arrays, applying pd.isna to each element.
             current_item_assignments = [str(x) for x in entry if not pd.isna(x)]
-        elif pd.isna(entry):
-            pass
+        elif pd.isna(entry): # This will now primarily handle scalar NA types (None, np.nan, pd.NA)
+                             # as lists/arrays are caught by the condition above.
+            pass # No assignments for this item if it's a scalar NA
         elif isinstance(entry, str):
             try:
+                # Attempt to parse string as a Python literal (e.g., "[1, 2]", "['a', 'b']")
                 evaluated_entry = ast.literal_eval(entry)
                 if isinstance(evaluated_entry, list):
                     current_item_assignments = [str(x) for x in evaluated_entry if not pd.isna(x)]
                 else:
-                    if not pd.isna(evaluated_entry):
+                    # literal_eval succeeded but resulted in a scalar (e.g. string "'item1'")
+                    if not pd.isna(evaluated_entry): # Check if the scalar result is NA
                         current_item_assignments = [str(evaluated_entry)]
             except (ValueError, SyntaxError, TypeError):
-                current_item_assignments = [entry]
+                # If literal_eval fails, treat the string as a single category
+                current_item_assignments = [entry] # entry is already a string
         else:
-            if not pd.isna(entry):
+            # For numbers or other scalar types not covered above
+            if not pd.isna(entry): # Check if the scalar entry is NA
                 current_item_assignments = [str(entry)]
         
         assignments_per_item.append(current_item_assignments)

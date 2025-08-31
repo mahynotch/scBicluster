@@ -1,0 +1,16 @@
+LICENSE
+pyproject.toml
+biclust_classifier.egg-info/PKG-INFO
+biclust_classifier.egg-info/SOURCES.txt
+biclust_classifier.egg-info/dependency_links.txt
+biclust_classifier.egg-info/top_level.txt
+bicluster/RandomExpressionMatrixGen.py
+bicluster/__init__.py
+bicluster/algorithms.py
+bicluster/annotation.py
+bicluster/classifier.py
+bicluster/enrichment.py
+bicluster/metrices.py
+bicluster/utils.py
+bicluster/visualization.py
+bicluster/wrapper.py
